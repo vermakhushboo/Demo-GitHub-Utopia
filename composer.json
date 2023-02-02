@@ -1,0 +1,29 @@
+{
+    "name": "vermakhushboo",
+    "description": "An example of the Utopia framework with GitHub App.",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "vermakhushboo"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Github\\": "src/GitHub"
+        }
+    },
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=8.1",
+        "utopia-php/swoole": "0.7.0",
+        "utopia-php/cli": "0.14.0",
+        "vlucas/phpdotenv": "5.5.x-dev",
+        "adhocore/jwt": "1.1.2",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "swoole/ide-helper": "4.6.7"
+    }
+
+}
