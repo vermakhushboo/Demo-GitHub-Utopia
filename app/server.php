@@ -51,13 +51,11 @@ App::post('/todos')
     ->action(
         function ($task, $is_complete, $response) {
             $id = uniqid();
-            var_dump($id);
             $path = \realpath('/app/app/todos.json');
             $data = json_decode(file_get_contents($path), true);
             $task_entry = ['id' => $id, 'task' => $task, 'is_complete' => $is_complete];
             array_push($data, $task_entry);
             $jsonData = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            var_dump($jsonData);
             file_put_contents($path, $jsonData);
             $response->json($data);
         }
@@ -69,28 +67,28 @@ App::post('/')
     ->action(
         function ($request, $response) {
             try{
+                // fetch env variables from .env file
                 $privateKeyString = getenv('GITHUB_PRIVATE_KEY');
-                var_dump($privateKeyString);
                 $privateKey = openssl_pkey_get_private($privateKeyString);
-                var_dump($privateKey);
                 $webhookSecret = getenv('GITHUB_WEBHOOK_SECRET');
                 $appIdentifier = getenv('GITHUB_APP_IDENTIFIER');
             } catch (\Exception $e) {
                 $response->json(['Error3' => 'World']);
                 return;
             }
+            // Get Payload request
             $payload = $request->getParams();
+            // Fetch params like installation id from payload
             $installationId = $payload['installation']['id'];
             try {
                 $payloadRaw = json_encode($payload, true);
             } catch (\Exception $e) {
-                var_dump("error");
-                var_dump($e);
                 $response->json(['Error1' => 'World']);
                 return;
             }
 
             try{
+                // verify webhook signature
                 $theirSignatureHeader = $request->header['http_x_hub_signature_256'] ?? 'sha256=';
                 // [$method, $theirDigest] = explode('=', $theirSignatureHeader);
                 // $ourDigest = hash_hmac('sha256', $payloadRaw, $webhookSecret);
@@ -108,29 +106,24 @@ App::post('/')
                     'iss' => $appIdentifier,
                 ];
 
-                var_dump("privateKey");
-                var_dump($privateKey);
                 $key = openssl_pkey_new([
                     'digest_alg' => 'sha256',
                     'private_key_bits' => 1024,
                     'private_key_type' => OPENSSL_KEYTYPE_RSA,
                 ]);
+                // authenticate app
                 $jwt = new JWT($privateKey, 'RS256');
                 $token = $jwt->encode($payload);
-                var_dump("token: ");
-                var_dump($token);
+                // Authenticate the app installation in order to run API operations
                 $client = new Client([
                     // Base URI is used with relative requests
                     'base_uri' => 'https://api.github.com',
                     // You can set any number of default request options.
                     'timeout'  => 2.0,
                 ]);
-                var_dump("another");
+                // Use the generated bearer token to make API requests on behalf of the GitHub App
                 $req = new Psr7Request('POST', "/app/installations/$installationId/access_tokens", ["Authorization" => "Bearer $token"]);
                 $res = $client->send($req);
-                var_dump($res);
-
-                var_dump("hello");
                 $response->status(200);
                 $response->send();
 
